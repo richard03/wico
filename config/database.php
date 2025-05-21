@@ -1,10 +1,18 @@
 <?php
 class Database {
-    private $host = "localhost";
-    private $db_name = "wico_db";
-    private $username = "root";
-    private $password = "";
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     private $conn;
+
+    public function __construct() {
+        $secret = require __DIR__ . '/secret.php';
+        $this->host = $secret['host'];
+        $this->db_name = $secret['db_name'];
+        $this->username = $secret['username'];
+        $this->password = $secret['password'];
+    }
 
     public function getConnection() {
         $this->conn = null;
