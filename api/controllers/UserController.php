@@ -27,7 +27,7 @@ class UserController {
                  WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         $stmt->execute();
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -48,14 +48,14 @@ class UserController {
         // Generate a random key if not provided
         $key = $data['key'] ?? mt_rand(1000000000, 9999999999);
         
-        $stmt->bindParam(":key", $key);
-        $stmt->bindParam(":name", $data['name'] ?? null);
-        $stmt->bindParam(":google_id", $data['google_id']);
-        $stmt->bindParam(":username", $data['username'] ?? null);
-        $stmt->bindParam(":profile_picture_url", $data['profile_picture_url'] ?? null);
-        $stmt->bindParam(":email", $data['email']);
-        $stmt->bindParam(":phone", $data['phone'] ?? null);
-        $stmt->bindParam(":gps", $data['gps'] ?? null);
+        $stmt->bindValue(":key", $key);
+        $stmt->bindValue(":name", $data['name'] ?? null);
+        $stmt->bindValue(":google_id", $data['google_id']);
+        $stmt->bindValue(":username", $data['username'] ?? null);
+        $stmt->bindValue(":profile_picture_url", $data['profile_picture_url'] ?? null);
+        $stmt->bindValue(":email", $data['email']);
+        $stmt->bindValue(":phone", $data['phone'] ?? null);
+        $stmt->bindValue(":gps", $data['gps'] ?? null);
         
         if ($stmt->execute()) {
             return [
@@ -85,12 +85,12 @@ class UserController {
         
         $stmt = $this->conn->prepare($query);
         
-        $stmt->bindParam(":id", $id);
-        $stmt->bindParam(":name", $data['name'] ?? null);
-        $stmt->bindParam(":username", $data['username'] ?? null);
-        $stmt->bindParam(":profile_picture_url", $data['profile_picture_url'] ?? null);
-        $stmt->bindParam(":phone", $data['phone'] ?? null);
-        $stmt->bindParam(":gps", $data['gps'] ?? null);
+        $stmt->bindValue(":id", $id);
+        $stmt->bindValue(":name", $data['name'] ?? null);
+        $stmt->bindValue(":username", $data['username'] ?? null);
+        $stmt->bindValue(":profile_picture_url", $data['profile_picture_url'] ?? null);
+        $stmt->bindValue(":phone", $data['phone'] ?? null);
+        $stmt->bindValue(":gps", $data['gps'] ?? null);
         
         if ($stmt->execute()) {
             return $this->get($id);
@@ -103,7 +103,7 @@ class UserController {
         $query = "DELETE FROM users WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         
         if ($stmt->execute()) {
             return ["message" => "User deleted successfully"];
