@@ -27,7 +27,7 @@ class FeelingController {
                  WHERE f.id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         $stmt->execute();
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -46,9 +46,9 @@ class FeelingController {
         // Generate a random key if not provided
         $key = $data['key'] ?? mt_rand(1000000000, 9999999999);
         
-        $stmt->bindParam(":key", $key);
-        $stmt->bindParam(":user_id", $data['user_id']);
-        $stmt->bindParam(":feeling", $data['feeling']);
+        $stmt->bindValue(":key", $key);
+        $stmt->bindValue(":user_id", $data['user_id']);
+        $stmt->bindValue(":feeling", $data['feeling']);
         
         if ($stmt->execute()) {
             return [
@@ -71,8 +71,8 @@ class FeelingController {
         
         $stmt = $this->conn->prepare($query);
         
-        $stmt->bindParam(":id", $id);
-        $stmt->bindParam(":feeling", $data['feeling']);
+        $stmt->bindValue(":id", $id);
+        $stmt->bindValue(":feeling", $data['feeling']);
         
         if ($stmt->execute()) {
             return $this->get($id);
@@ -85,7 +85,7 @@ class FeelingController {
         $query = "DELETE FROM feelings WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         
         if ($stmt->execute()) {
             return ["message" => "Feeling deleted successfully"];

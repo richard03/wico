@@ -27,7 +27,7 @@ class DesireController {
                  WHERE d.id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         $stmt->execute();
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -46,10 +46,10 @@ class DesireController {
         // Generate a random key if not provided
         $key = $data['key'] ?? mt_rand(1000000000, 9999999999);
         
-        $stmt->bindParam(":key", $key);
-        $stmt->bindParam(":user_id", $data['user_id']);
-        $stmt->bindParam(":desire", $data['desire']);
-        $stmt->bindParam(":comment", $data['comment'] ?? null);
+        $stmt->bindValue(":key", $key);
+        $stmt->bindValue(":user_id", $data['user_id']);
+        $stmt->bindValue(":desire", $data['desire']);
+        $stmt->bindValue(":comment", $data['comment'] ?? null);
         
         if ($stmt->execute()) {
             return [
@@ -76,9 +76,9 @@ class DesireController {
         
         $stmt = $this->conn->prepare($query);
         
-        $stmt->bindParam(":id", $id);
-        $stmt->bindParam(":desire", $data['desire']);
-        $stmt->bindParam(":comment", $data['comment'] ?? null);
+        $stmt->bindValue(":id", $id);
+        $stmt->bindValue(":desire", $data['desire']);
+        $stmt->bindValue(":comment", $data['comment'] ?? null);
         
         if ($stmt->execute()) {
             return $this->get($id);
@@ -91,7 +91,7 @@ class DesireController {
         $query = "DELETE FROM desires WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         
         if ($stmt->execute()) {
             return ["message" => "Desire deleted successfully"];

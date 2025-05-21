@@ -29,7 +29,7 @@ class ContactController {
                  WHERE c.id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         $stmt->execute();
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -43,8 +43,8 @@ class ContactController {
         $query = "INSERT INTO contacts (user_1, user_2) VALUES (:user_1, :user_2)";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_1", $data['user_1']);
-        $stmt->bindParam(":user_2", $data['user_2']);
+        $stmt->bindValue(":user_1", $data['user_1']);
+        $stmt->bindValue(":user_2", $data['user_2']);
         
         if ($stmt->execute()) {
             return [
@@ -65,9 +65,9 @@ class ContactController {
         $query = "UPDATE contacts SET user_1 = :user_1, user_2 = :user_2 WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
-        $stmt->bindParam(":user_1", $data['user_1']);
-        $stmt->bindParam(":user_2", $data['user_2']);
+        $stmt->bindValue(":id", $id);
+        $stmt->bindValue(":user_1", $data['user_1']);
+        $stmt->bindValue(":user_2", $data['user_2']);
         
         if ($stmt->execute()) {
             return [
@@ -84,7 +84,7 @@ class ContactController {
         $query = "DELETE FROM contacts WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $id);
+        $stmt->bindValue(":id", $id);
         
         if ($stmt->execute()) {
             return ["message" => "Contact deleted successfully"];
