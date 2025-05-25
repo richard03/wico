@@ -4,10 +4,14 @@ require_once __DIR__ . '/BaseModel.php';
 class User extends BaseModel {
     protected $table_name = 'users';
 
+    public function generateKey() {
+        return bin2hex(random_bytes(32));
+    }
+
     public function createUser($data) {
         // Generate a secure session token if not provided
-        if (!isset($data['session_token'])) {
-            $data['session_token'] = bin2hex(random_bytes(32));
+        if (!isset($data['key'])) {
+            $data['key'] = $this->generateKey();
         }
         
         // Set session expiry to 30 days from now if not provided
@@ -18,32 +22,17 @@ class User extends BaseModel {
         return $this->create($data);
     }
 
-    public function getUserBySessionToken($token) {
+    public function getUserById($id) {
         $query = "SELECT * FROM " . $this->table_name . " 
-                 WHERE session_token = ? AND session_token_expiry > NOW()";
+                 WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->execute([$token]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function getUserByGoogleId($googleId) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE google_id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$googleId]);
+        $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function updateLastLogin($userId) {
         $query = "UPDATE " . $this->table_name . " 
                  SET last_login = CURRENT_TIMESTAMP 
-                 WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$userId]);
-    }
-
-    public function invalidateSessionToken($userId) {
-        $query = "UPDATE " . $this->table_name . " 
-                 SET session_token = NULL, session_token_expiry = NULL 
                  WHERE id = ?";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$userId]);

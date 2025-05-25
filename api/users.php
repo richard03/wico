@@ -30,11 +30,11 @@ if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
 switch ($method) {
     case 'POST':
         // Create new user
-        if (!isset($data['google_id']) || !isset($data['email'])) {
+        if (!isset($data['email'])) {
             ApiResponse::error('Missing required fields');
         }
 
-        $existingUser = $user->getUserByGoogleId($data['google_id']);
+        $existingUser = $user->getUserByEmail($data['email']);
         if ($existingUser) {
             // Update last login
             $user->updateLastLogin($existingUser['id']);
@@ -43,7 +43,7 @@ switch ($method) {
 
         $result = $user->createUser($data);
         if ($result) {
-            $newUser = $user->getUserByGoogleId($data['google_id']);
+            $newUser = $user->getUserByEmail($data['email']);
             ApiResponse::success($newUser, 'User created successfully');
         } else {
             ApiResponse::error('Failed to create user');
@@ -51,11 +51,11 @@ switch ($method) {
         break;
 
     case 'GET':
-        if (!$token) {
+        if (!$id) {
             ApiResponse::error('Unauthorized', 401);
         }
 
-        $currentUser = $user->getUserBySessionToken($token);
+        $currentUser = $user->getUserById($id);
         if (!$currentUser) {
             ApiResponse::error('Invalid session token', 401);
         }
@@ -65,11 +65,11 @@ switch ($method) {
         break;
 
     case 'PUT':
-        if (!$token) {
+        if (!$id) {
             ApiResponse::error('Unauthorized', 401);
         }
 
-        $currentUser = $user->getUserBySessionToken($token);
+        $currentUser = $user->getUserById($id);
         if (!$currentUser) {
             ApiResponse::error('Invalid session token', 401);
         }
@@ -85,21 +85,13 @@ switch ($method) {
         break;
 
     case 'DELETE':
-        if (!$token) {
+        if (!$id) {
             ApiResponse::error('Unauthorized', 401);
         }
 
-        $currentUser = $user->getUserBySessionToken($token);
+        $currentUser = $user->getUserById($id);
         if (!$currentUser) {
             ApiResponse::error('Invalid session token', 401);
-        }
-
-        // Logout user
-        $result = $user->invalidateSessionToken($currentUser['id']);
-        if ($result) {
-            ApiResponse::success(null, 'Logged out successfully');
-        } else {
-            ApiResponse::error('Failed to logout');
         }
         break;
 
