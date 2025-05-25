@@ -1,102 +1,59 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../models/Desire.php';
+require_once __DIR__ . '/../models/User.php';
 
 class DesireController {
-    private $conn;
+    private $desire;
+    private $user;
     
     public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+        $this->desire = new Desire();
+        $this->user = new User();
     }
     
     public function getAll() {
-        $query = "SELECT d.*, u.name as user_name 
-                 FROM desires d 
-                 JOIN users u ON d.user_id = u.id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->desire->getAll();
     }
     
     public function get($id) {
-        $query = "SELECT d.*, u.name as user_name 
-                 FROM desires d 
-                 JOIN users u ON d.user_id = u.id 
-                 WHERE d.id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":id", $id);
-        $stmt->execute();
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $this->desire->get($id);
     }
     
     public function create($data) {
-        if (!isset($data['user_id']) || !isset($data['desire'])) {
-            throw new Exception("user_id and desire are required");
+        if (!isset($data['desire'])) {
+            throw new Exception('Desire is required');
+        }
+        if (!isset($data['user_id'])) {
+            throw new Exception('User ID is required');
         }
         
-        $query = "INSERT INTO desires (`key`, user_id, desire, comment) 
-                 VALUES (:key, :user_id, :desire, :comment)";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        // Generate a random key if not provided
-        $key = $data['key'] ?? mt_rand(1000000000, 9999999999);
-        
-        $stmt->bindValue(":key", $key);
-        $stmt->bindValue(":user_id", $data['user_id']);
-        $stmt->bindValue(":desire", $data['desire']);
-        $stmt->bindValue(":comment", $data['comment'] ?? null);
-        
-        if ($stmt->execute()) {
-            return [
-                "id" => $this->conn->lastInsertId(),
-                "key" => $key,
-                "user_id" => $data['user_id'],
-                "desire" => $data['desire'],
-                "comment" => $data['comment'] ?? null
-            ];
+        // Verify user exists
+        $user = $this->user->get($data['user_id']);
+        if (!$user) {
+            throw new Exception('User not found');
         }
         
-        throw new Exception("Unable to create desire");
+        return $this->desire->create($data);
     }
     
     public function update($id, $data) {
         if (!isset($data['desire'])) {
-            throw new Exception("desire is required");
+            throw new Exception('Desire is required');
+        }
+        if (!isset($data['user_id'])) {
+            throw new Exception('User ID is required');
         }
         
-        $query = "UPDATE desires SET 
-                    desire = :desire,
-                    comment = :comment
-                 WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        $stmt->bindValue(":id", $id);
-        $stmt->bindValue(":desire", $data['desire']);
-        $stmt->bindValue(":comment", $data['comment'] ?? null);
-        
-        if ($stmt->execute()) {
-            return $this->get($id);
+        // Verify user exists
+        $user = $this->user->get($data['user_id']);
+        if (!$user) {
+            throw new Exception('User not found');
         }
         
-        throw new Exception("Unable to update desire");
+        return $this->desire->update($id, $data);
     }
     
     public function delete($id) {
-        $query = "DELETE FROM desires WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":id", $id);
-        
-        if ($stmt->execute()) {
-            return ["message" => "Desire deleted successfully"];
-        }
-        
-        throw new Exception("Unable to delete desire");
+        return $this->desire->delete($id);
     }
 } 

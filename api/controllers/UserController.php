@@ -24,6 +24,9 @@ class UserController {
     }
     
     public function update($id, $data) {
+        if (isset($data['nickname']) && empty($data['nickname'])) {
+            throw new Exception('Nickname cannot be empty');
+        }
         return $this->user->update($id, $data);
     }
     
