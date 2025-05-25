@@ -25,18 +25,18 @@ class Desire {
         }
     }
     
-    public function get($id) {
+    public function get($user_id) {
         try {
             $query = "SELECT d.*, u.nickname as user_name 
                      FROM desires d 
                      JOIN users u ON d.user_id = u.id 
-                     WHERE d.id = :id";
+                     WHERE d.user_id = :user_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":user_id", $user_id);
             $stmt->execute();
             
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("SQL Error in get: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
@@ -70,21 +70,21 @@ class Desire {
         }
     }
     
-    public function update($id, $data) {
+    public function update($user_id, $data) {
         try {
             $query = "UPDATE desires SET 
                         desire = :desire,
                         comment = :comment
-                     WHERE id = :id";
+                     WHERE user_id = :user_id";
             
             $stmt = $this->conn->prepare($query);
             
-            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":user_id", $user_id);
             $stmt->bindValue(":desire", $data['desire']);
             $stmt->bindValue(":comment", $data['comment'] ?? null);
             
             if ($stmt->execute()) {
-                return $this->get($id);
+                return $this->get($user_id);
             }
             
             throw new Exception("Unable to update desire");
@@ -94,12 +94,12 @@ class Desire {
         }
     }
     
-    public function delete($id) {
+    public function delete($user_id) {
         try {
-            $query = "DELETE FROM desires WHERE id = :id";
+            $query = "DELETE FROM desires WHERE user_id = :user_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":user_id", $user_id);
             
             if ($stmt->execute()) {
                 return ["message" => "Desire deleted successfully"];
