@@ -45,25 +45,54 @@ class Desire {
     
     public function create($data) {
         try {
-            $query = "INSERT INTO desires (user_id, desire, comment) 
-                     VALUES (:user_id, :desire, :comment)";
+            // First check if desire exists for this user
+            $checkQuery = "SELECT id FROM desires WHERE user_id = :user_id";
+            $checkStmt = $this->conn->prepare($checkQuery);
+            $checkStmt->bindValue(":user_id", $data['user_id']);
+            $checkStmt->execute();
+            $existingDesire = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
-            $stmt = $this->conn->prepare($query);
-            
-            $stmt->bindValue(":user_id", $data['user_id']);
-            $stmt->bindValue(":desire", $data['desire']);
-            $stmt->bindValue(":comment", $data['comment'] ?? null);
-            
-            if ($stmt->execute()) {
-                return [
-                    "id" => $this->conn->lastInsertId(),
-                    "user_id" => $data['user_id'],
-                    "desire" => $data['desire'],
-                    "comment" => $data['comment'] ?? null
-                ];
+            if ($existingDesire) {
+                // If exists, update it
+                $query = "UPDATE desires SET 
+                            desire = :desire,
+                            comment = :comment
+                         WHERE user_id = :user_id";
+                
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(":user_id", $data['user_id']);
+                $stmt->bindValue(":desire", $data['desire']);
+                $stmt->bindValue(":comment", $data['comment'] ?? null);
+                
+                if ($stmt->execute()) {
+                    return [
+                        "id" => $existingDesire['id'],
+                        "user_id" => $data['user_id'],
+                        "desire" => $data['desire'],
+                        "comment" => $data['comment'] ?? null
+                    ];
+                }
+            } else {
+                // If doesn't exist, create new
+                $query = "INSERT INTO desires (user_id, desire, comment) 
+                         VALUES (:user_id, :desire, :comment)";
+                
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(":user_id", $data['user_id']);
+                $stmt->bindValue(":desire", $data['desire']);
+                $stmt->bindValue(":comment", $data['comment'] ?? null);
+                
+                if ($stmt->execute()) {
+                    return [
+                        "id" => $this->conn->lastInsertId(),
+                        "user_id" => $data['user_id'],
+                        "desire" => $data['desire'],
+                        "comment" => $data['comment'] ?? null
+                    ];
+                }
             }
             
-            throw new Exception("Unable to create desire");
+            throw new Exception("Unable to create/update desire");
         } catch (PDOException $e) {
             error_log("SQL Error in create: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
