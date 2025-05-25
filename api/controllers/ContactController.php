@@ -1,95 +1,73 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../models/Contact.php';
+require_once __DIR__ . '/../models/User.php';
 
 class ContactController {
-    private $conn;
+    private $contact;
+    private $user;
     
     public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+        $this->contact = new Contact();
+        $this->user = new User();
     }
     
     public function getAll() {
-        $query = "SELECT c.*, u1.name as user1_name, u2.name as user2_name 
-                 FROM contacts c 
-                 JOIN users u1 ON c.user_1 = u1.id 
-                 JOIN users u2 ON c.user_2 = u2.id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->contact->getAll();
     }
     
-    public function get($id) {
-        $query = "SELECT c.*, u1.name as user1_name, u2.name as user2_name 
-                 FROM contacts c 
-                 JOIN users u1 ON c.user_1 = u1.id 
-                 JOIN users u2 ON c.user_2 = u2.id 
-                 WHERE c.id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":id", $id);
-        $stmt->execute();
-        
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+    public function get($user_id) {
+        // Verify user exists
+        $user = $this->user->get($user_id);
+        if (!$user) {
+            throw new Exception('User not found');
+        }
+        return $this->contact->get($user_id);
     }
     
     public function create($data) {
         if (!isset($data['user_1']) || !isset($data['user_2'])) {
-            throw new Exception("user_1 and user_2 are required");
+            throw new Exception('Both users are required');
         }
         
-        $query = "INSERT INTO contacts (user_1, user_2) VALUES (:user_1, :user_2)";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":user_1", $data['user_1']);
-        $stmt->bindValue(":user_2", $data['user_2']);
-        
-        if ($stmt->execute()) {
-            return [
-                "id" => $this->conn->lastInsertId(),
-                "user_1" => $data['user_1'],
-                "user_2" => $data['user_2']
-            ];
+        // Verify both users exist
+        $user1 = $this->user->get($data['user_1']);
+        if (!$user1) {
+            throw new Exception('User 1 not found');
         }
         
-        throw new Exception("Unable to create contact");
+        $user2 = $this->user->get($data['user_2']);
+        if (!$user2) {
+            throw new Exception('User 2 not found');
+        }
+        
+        return $this->contact->create($data);
     }
     
-    public function update($id, $data) {
-        if (!isset($data['user_1']) || !isset($data['user_2'])) {
-            throw new Exception("user_1 and user_2 are required");
+    public function update($user_id, $data) {
+        if (!isset($data['user_2'])) {
+            throw new Exception('User 2 is required');
         }
         
-        $query = "UPDATE contacts SET user_1 = :user_1, user_2 = :user_2 WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":id", $id);
-        $stmt->bindValue(":user_1", $data['user_1']);
-        $stmt->bindValue(":user_2", $data['user_2']);
-        
-        if ($stmt->execute()) {
-            return [
-                "id" => $id,
-                "user_1" => $data['user_1'],
-                "user_2" => $data['user_2']
-            ];
+        // Verify both users exist
+        $user1 = $this->user->get($user_id);
+        if (!$user1) {
+            throw new Exception('User 1 not found');
         }
         
-        throw new Exception("Unable to update contact");
+        $user2 = $this->user->get($data['user_2']);
+        if (!$user2) {
+            throw new Exception('User 2 not found');
+        }
+        
+        return $this->contact->update($user_id, $data);
     }
     
-    public function delete($id) {
-        $query = "DELETE FROM contacts WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(":id", $id);
-        
-        if ($stmt->execute()) {
-            return ["message" => "Contact deleted successfully"];
+    public function delete($user_id) {
+        // Verify user exists
+        $user = $this->user->get($user_id);
+        if (!$user) {
+            throw new Exception('User not found');
         }
-        
-        throw new Exception("Unable to delete contact");
+        return $this->contact->delete($user_id);
     }
 } 
