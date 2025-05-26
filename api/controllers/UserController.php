@@ -9,6 +9,18 @@ class UserController {
     }
     
     public function getAll() {
+        // Get query parameters from $_GET
+        $email = isset($_GET['email']) ? urldecode($_GET['email']) : null;
+        $phone = isset($_GET['phone']) ? urldecode($_GET['phone']) : null;
+        
+        if ($email !== null || $phone !== null) {
+            $result = $this->user->findByEmailOrPhone($email, $phone);
+            if ($result === null) {
+                return [];
+            }
+            return $result;
+        }
+        
         return $this->user->getAll();
     }
     

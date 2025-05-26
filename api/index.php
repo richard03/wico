@@ -6,7 +6,8 @@ $request_uri = $_SERVER['REQUEST_URI'];
 $base_path = '/api/';
 $path = substr($request_uri, strpos($request_uri, $base_path) + strlen($base_path));
 
-// Split the path into segments
+// Split the path into segments and remove query string
+$path = strtok($path, '?');
 $segments = explode('/', trim($path, '/'));
 
 // Get the HTTP method

@@ -41,6 +41,64 @@ class User {
         }
     }
     
+    public function findByEmailOrPhone($email = null, $phone = null) {
+        try {
+            $query = "SELECT id, nickname, email, created_at, updated_at, last_login, phone, gps 
+                     FROM users 
+                     WHERE 1=1";
+            $params = [];
+            
+            if ($email !== null) {
+                $query .= " AND email = :email";
+                $params[':email'] = $email;
+            }
+            
+            if ($phone !== null) {
+                // Decode the phone number from URI encoding
+                $phone = urldecode($phone);
+                // Remove all spaces from the phone number
+                $phone = str_replace(' ', '', $phone);
+                // Add + prefix if not present
+                if (strpos($phone, '+') !== 0) {
+                    $phone = '+' . $phone;
+                }
+                
+                // Log the phone number for debugging
+                error_log("Searching for phone number: " . $phone);
+                
+                // First, let's see what phone numbers we have in the database
+                $debugQuery = "SELECT phone FROM users WHERE phone IS NOT NULL";
+                $debugStmt = $this->conn->prepare($debugQuery);
+                $debugStmt->execute();
+                $allPhones = $debugStmt->fetchAll(PDO::FETCH_COLUMN);
+                error_log("All phone numbers in database: " . print_r($allPhones, true));
+                
+                $query .= " AND REPLACE(phone, ' ', '') = :phone";
+                $params[':phone'] = $phone;
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            
+            // Log the final query and parameters
+            error_log("Final query: " . $query);
+            error_log("Parameters: " . print_r($params, true));
+            
+            $stmt->execute();
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result === false) {
+                return null;
+            }
+            return $result;
+        } catch (PDOException $e) {
+            error_log("SQL Error in findByEmailOrPhone: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
+    
     public function create($data) {
         try {
             // Generate a random 10-digit number for id
