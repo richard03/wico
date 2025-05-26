@@ -66,7 +66,7 @@ class Desire {
                 $query = "UPDATE desires SET 
                             desire = :desire,
                             comment = :comment,
-                            updated_at = CURRENT_TIMESTAMP
+                            time = CURRENT_TIMESTAMP
                          WHERE user_id = :user_id";
                 
                 $stmt = $this->conn->prepare($query);
@@ -84,8 +84,8 @@ class Desire {
                 }
             } else {
                 // If doesn't exist, create new
-                $query = "INSERT INTO desires (user_id, desire, comment) 
-                         VALUES (:user_id, :desire, :comment)";
+                $query = "INSERT INTO desires (user_id, desire, comment, time) 
+                         VALUES (:user_id, :desire, :comment, CURRENT_TIMESTAMP)";
                 
                 $stmt = $this->conn->prepare($query);
                 $stmt->bindValue(":user_id", $data['user_id']);
