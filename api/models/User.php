@@ -103,6 +103,19 @@ class User {
     
     public function delete($id) {
         try {
+            // First delete all contacts where this user is either user_1_id or user_2_id
+            $deleteContactsQuery = "DELETE FROM contacts WHERE user_1_id = :user_id OR user_2_id = :user_id";
+            $deleteContactsStmt = $this->conn->prepare($deleteContactsQuery);
+            $deleteContactsStmt->bindValue(":user_id", $id);
+            $deleteContactsStmt->execute();
+            
+            // Then delete all desires associated with this user
+            $deleteDesiresQuery = "DELETE FROM desires WHERE user_id = :user_id";
+            $deleteDesiresStmt = $this->conn->prepare($deleteDesiresQuery);
+            $deleteDesiresStmt->bindValue(":user_id", $id);
+            $deleteDesiresStmt->execute();
+            
+            // Finally delete the user
             $query = "DELETE FROM users WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
