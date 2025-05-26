@@ -73,5 +73,12 @@ class Database {
             FOREIGN KEY (user_1_id) REFERENCES users(id),
             FOREIGN KEY (user_2_id) REFERENCES users(id)
         )");
+
+        // Localization table
+        $this->conn->exec("CREATE TABLE IF NOT EXISTS localization (
+            message_key VARCHAR(255) NOT NULL PRIMARY KEY,
+            language VARCHAR(5) NOT NULL,
+            message_text TEXT NOT NULL
+        )");
     }
 } 

@@ -195,6 +195,20 @@ try {
             }
             break;
             
+        case 'localization':
+            require_once __DIR__ . '/controllers/LocalizationController.php';
+            $controller = new LocalizationController();
+            
+            if ($method === 'GET') {
+                if (!$id) {
+                    throw new Exception('Language is required');
+                }
+                echo json_encode($controller->getAll($id));
+            } else {
+                throw new Exception('Method not allowed');
+            }
+            break;
+            
         default:
             throw new Exception('Resource not found');
     }
