@@ -19,6 +19,15 @@ class ContactController {
         return $this->contact->get($id);
     }
     
+    public function getUserContacts($user_id, $desire = null) {
+        // Verify user exists
+        $user = $this->user->get($user_id);
+        if (!$user) {
+            throw new Exception('User not found');
+        }
+        return $this->contact->getUserContacts($user_id, $desire);
+    }
+    
     public function create($data) {
         if (!isset($data['user_1_id']) || !isset($data['user_2_id'])) {
             throw new Exception('Both user IDs are required');

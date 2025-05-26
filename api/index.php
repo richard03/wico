@@ -30,6 +30,18 @@ try {
             require_once __DIR__ . '/controllers/UserController.php';
             $controller = new UserController();
             
+            // Check if this is a request for user contacts
+            if (isset($segments[2]) && $segments[2] === 'contacts') {
+                require_once __DIR__ . '/controllers/ContactController.php';
+                $contactController = new ContactController();
+                
+                if ($method === 'GET') {
+                    $desire = $_GET['desire'] ?? null;
+                    echo json_encode($contactController->getUserContacts($id, $desire));
+                    break;
+                }
+            }
+            
             switch ($method) {
                 case 'GET':
                     if ($id) {

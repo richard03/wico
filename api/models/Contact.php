@@ -26,6 +26,37 @@ class Contact {
         }
     }
     
+    public function getUserContacts($user_id, $desire = null) {
+        try {
+            $query = "SELECT c.*, u1.nickname as user_1_nickname, u2.nickname as user_2_nickname,
+                            d.desire, d.comment as desire_comment
+                     FROM contacts c 
+                     JOIN users u1 ON c.user_1_id = u1.id 
+                     JOIN users u2 ON c.user_2_id = u2.id
+                     LEFT JOIN desires d ON d.user_id = u2.id";
+            
+            $query .= " WHERE c.user_1_id = :user_id";
+            
+            if ($desire !== null) {
+                $query .= " AND d.desire LIKE :desire";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":user_id", $user_id);
+            
+            if ($desire !== null) {
+                $stmt->bindValue(":desire", "%" . $desire . "%");
+            }
+            
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("SQL Error in getUserContacts: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
+    
     public function get($user_1_id) {
         try {
             $query = "SELECT c.*, u1.nickname as user_1_nickname, u2.nickname as user_2_nickname 
@@ -47,25 +78,41 @@ class Contact {
     
     public function create($data) {
         try {
-            $query = "INSERT INTO contacts (user_1_id, user_2_id, user_2_alias) 
-                     VALUES (:user_1_id, :user_2_id, :user_2_alias)";
+            // Start transaction
+            $this->conn->beginTransaction();
             
-            $stmt = $this->conn->prepare($query);
+            // First contact (user_1 -> user_2)
+            $query1 = "INSERT INTO contacts (user_1_id, user_2_id, user_2_alias) 
+                      VALUES (:user_1_id, :user_2_id, :user_2_alias)";
             
-            $stmt->bindValue(":user_1_id", $data['user_1_id']);
-            $stmt->bindValue(":user_2_id", $data['user_2_id']);
-            $stmt->bindValue(":user_2_alias", $data['user_2_alias'] ?? null);
+            $stmt1 = $this->conn->prepare($query1);
+            $stmt1->bindValue(":user_1_id", $data['user_1_id']);
+            $stmt1->bindValue(":user_2_id", $data['user_2_id']);
+            $stmt1->bindValue(":user_2_alias", $data['user_2_alias'] ?? null);
+            $stmt1->execute();
             
-            if ($stmt->execute()) {
-                return [
-                    "user_1_id" => $data['user_1_id'],
-                    "user_2_id" => $data['user_2_id'],
-                    "user_2_alias" => $data['user_2_alias'] ?? null
-                ];
-            }
+            // Second contact (user_2 -> user_1)
+            $query2 = "INSERT INTO contacts (user_1_id, user_2_id, user_2_alias) 
+                      VALUES (:user_1_id, :user_2_id, :user_2_alias)";
             
-            throw new Exception("Unable to create contact");
+            $stmt2 = $this->conn->prepare($query2);
+            $stmt2->bindValue(":user_1_id", $data['user_2_id']);
+            $stmt2->bindValue(":user_2_id", $data['user_1_id']);
+            $stmt2->bindValue(":user_2_alias", $data['user_1_alias'] ?? null);
+            $stmt2->execute();
+            
+            // Commit transaction
+            $this->conn->commit();
+            
+            return [
+                "user_1_id" => $data['user_1_id'],
+                "user_2_id" => $data['user_2_id'],
+                "user_2_alias" => $data['user_2_alias'] ?? null,
+                "user_1_alias" => $data['user_1_alias'] ?? null
+            ];
         } catch (PDOException $e) {
+            // Rollback transaction on error
+            $this->conn->rollBack();
             error_log("SQL Error in create: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
         }
@@ -96,19 +143,30 @@ class Contact {
     
     public function delete($user_1_id, $user_2_id) {
         try {
+            // Start transaction
+            $this->conn->beginTransaction();
+            
+            // Delete both directions of the contact
             $query = "DELETE FROM contacts 
-                     WHERE user_1_id = :user_1_id AND user_2_id = :user_2_id";
+                     WHERE (user_1_id = :user_1_id AND user_2_id = :user_2_id)
+                        OR (user_1_id = :user_2_id AND user_2_id = :user_1_id)";
             
             $stmt = $this->conn->prepare($query);
             $stmt->bindValue(":user_1_id", $user_1_id);
             $stmt->bindValue(":user_2_id", $user_2_id);
             
             if ($stmt->execute()) {
-                return ["message" => "Contact deleted successfully"];
+                // Commit transaction
+                $this->conn->commit();
+                return ["message" => "Contacts deleted successfully"];
             }
             
-            throw new Exception("Unable to delete contact");
+            // Rollback transaction on error
+            $this->conn->rollBack();
+            throw new Exception("Unable to delete contacts");
         } catch (PDOException $e) {
+            // Rollback transaction on error
+            $this->conn->rollBack();
             error_log("SQL Error in delete: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
         }
