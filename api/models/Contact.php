@@ -50,14 +50,14 @@ class Contact {
             $query = "INSERT INTO contacts (user_1_id, user_2_id) VALUES (:user_1_id, :user_2_id)";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":user_1_id", $data['user_1']);
-            $stmt->bindValue(":user_2_id", $data['user_2']);
+            $stmt->bindValue(":user_1_id", $data['user_1_id']);
+            $stmt->bindValue(":user_2_id", $data['user_2_id']);
             
             if ($stmt->execute()) {
                 return [
                     "id" => $this->conn->lastInsertId(),
-                    "user_1_id" => $data['user_1'],
-                    "user_2_id" => $data['user_2']
+                    "user_1_id" => $data['user_1_id'],
+                    "user_2_id" => $data['user_2_id']
                 ];
             }
             
@@ -68,16 +68,16 @@ class Contact {
         }
     }
     
-    public function update($user_id, $data) {
+    public function update($contact_id, $data) {
         try {
             $query = "UPDATE contacts SET user_2_id = :user_2_id WHERE user_1_id = :user_1_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":user_1_id", $user_id);
-            $stmt->bindValue(":user_2_id", $data['user_2']);
+            $stmt->bindValue(":user_1_id", $data['user_1_id']);
+            $stmt->bindValue(":user_2_id", $data['user_2_id']);
             
             if ($stmt->execute()) {
-                return $this->get($user_id);
+                return $this->get($contact_id);
             }
             
             throw new Exception("Unable to update contact");
@@ -87,12 +87,12 @@ class Contact {
         }
     }
     
-    public function delete($user_id) {
+    public function delete($contact_id) {
         try {
-            $query = "DELETE FROM contacts WHERE user_1_id = :user_id OR user_2_id = :user_id";
+            $query = "DELETE FROM contacts WHERE id = :contact_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":user_id", $user_id);
+            $stmt->bindValue(":contact_id", $contact_id);
             
             if ($stmt->execute()) {
                 return ["message" => "Contact deleted successfully"];
