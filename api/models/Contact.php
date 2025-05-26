@@ -34,7 +34,8 @@ class Contact {
                             u2.email as user_2_email,
                             u2.phone as user_2_phone,
                             d.desire, 
-                            d.comment as desire_comment
+                            d.comment as desire_comment,
+                            d.time as desire_time
                      FROM contacts c 
                      JOIN users u1 ON c.user_1_id = u1.id 
                      JOIN users u2 ON c.user_2_id = u2.id
