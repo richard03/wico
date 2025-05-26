@@ -15,62 +15,25 @@ class ContactController {
         return $this->contact->getAll();
     }
     
-    public function get($user_id) {
-        // Verify user exists
-        $user = $this->user->get($user_id);
-        if (!$user) {
-            throw new Exception('User not found');
-        }
-        return $this->contact->get($user_id);
+    public function get($id) {
+        return $this->contact->get($id);
     }
     
     public function create($data) {
         if (!isset($data['user_1_id']) || !isset($data['user_2_id'])) {
-            throw new Exception('Both users are required');
+            throw new Exception('Both user IDs are required');
         }
-        
-        // Verify both users exist
-        $user1 = $this->user->get($data['user_1_id']);
-        if (!$user1) {
-            throw new Exception('User 1 not found');
-        }
-        
-        $user2 = $this->user->get($data['user_2_id']);
-        if (!$user2) {
-            throw new Exception('User 2 not found');
-        }
-        
         return $this->contact->create($data);
     }
     
-    public function update($contact_id, $data) {
-        if (!isset($data['user_1_id'])) {
-            throw new Exception('User 1 is required');
+    public function update($id, $data) {
+        if (isset($data['user_2_alias']) && empty($data['user_2_alias'])) {
+            throw new Exception('User 2 alias cannot be empty');
         }
-        if (!isset($data['user_2_id'])) {
-            throw new Exception('User 2 is required');
-        }
-        
-        // Verify both users exist
-        $user1 = $this->user->get($data['user_1_id']);
-        if (!$user1) {
-            throw new Exception('User 1 not found');
-        }
-        
-        $user2 = $this->user->get($data['user_2_id']);
-        if (!$user2) {
-            throw new Exception('User 2 not found');
-        }
-        
-        return $this->contact->update($contact_id, $data);
+        return $this->contact->update($id, $data);
     }
     
-    public function delete($contact_id) {
-        // Verify contact exists
-        $contact = $this->contact->get($contact_id);
-        if (!$contact) {
-            throw new Exception('Contact not found');
-        }
-        return $this->contact->delete($contact_id);
+    public function delete($user_1_id, $user_2_id) {
+        return $this->contact->delete($user_1_id, $user_2_id);
     }
 } 

@@ -92,9 +92,13 @@ try {
                     
                 case 'DELETE':
                     if (!$id) {
-                        throw new Exception('ID is required for DELETE request');
+                        throw new Exception('User ID is required for DELETE request');
                     }
-                    echo json_encode($controller->delete($id));
+                    $contact_id = $_GET['contact'] ?? null;
+                    if (!$contact_id) {
+                        throw new Exception('Contact ID is required for DELETE request');
+                    }
+                    echo json_encode($controller->delete($id, $contact_id));
                     break;
                     
                 default:

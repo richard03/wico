@@ -26,16 +26,16 @@ class Contact {
         }
     }
     
-    public function get($user_id) {
+    public function get($user_1_id) {
         try {
             $query = "SELECT c.*, u1.nickname as user_1_nickname, u2.nickname as user_2_nickname 
                      FROM contacts c 
                      JOIN users u1 ON c.user_1_id = u1.id 
                      JOIN users u2 ON c.user_2_id = u2.id 
-                     WHERE c.user_1_id = :user_id OR c.user_2_id = :user_id";
+                     WHERE c.user_1_id = :user_1_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":user_id", $user_id);
+            $stmt->bindValue(":user_1_id", $user_1_id);
             $stmt->execute();
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -47,17 +47,20 @@ class Contact {
     
     public function create($data) {
         try {
-            $query = "INSERT INTO contacts (user_1_id, user_2_id) VALUES (:user_1_id, :user_2_id)";
+            $query = "INSERT INTO contacts (user_1_id, user_2_id, user_2_alias) 
+                     VALUES (:user_1_id, :user_2_id, :user_2_alias)";
             
             $stmt = $this->conn->prepare($query);
+            
             $stmt->bindValue(":user_1_id", $data['user_1_id']);
             $stmt->bindValue(":user_2_id", $data['user_2_id']);
+            $stmt->bindValue(":user_2_alias", $data['user_2_alias'] ?? null);
             
             if ($stmt->execute()) {
                 return [
-                    "id" => $this->conn->lastInsertId(),
                     "user_1_id" => $data['user_1_id'],
-                    "user_2_id" => $data['user_2_id']
+                    "user_2_id" => $data['user_2_id'],
+                    "user_2_alias" => $data['user_2_alias'] ?? null
                 ];
             }
             
@@ -68,16 +71,20 @@ class Contact {
         }
     }
     
-    public function update($contact_id, $data) {
+    public function update($id, $data) {
         try {
-            $query = "UPDATE contacts SET user_2_id = :user_2_id WHERE user_1_id = :user_1_id";
+            $query = "UPDATE contacts SET 
+                        user_2_alias = :user_2_alias,
+                        updated_at = CURRENT_TIMESTAMP
+                     WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":user_1_id", $data['user_1_id']);
-            $stmt->bindValue(":user_2_id", $data['user_2_id']);
+            
+            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":user_2_alias", $data['user_2_alias'] ?? null);
             
             if ($stmt->execute()) {
-                return $this->get($contact_id);
+                return $this->get($id);
             }
             
             throw new Exception("Unable to update contact");
@@ -87,12 +94,14 @@ class Contact {
         }
     }
     
-    public function delete($contact_id) {
+    public function delete($user_1_id, $user_2_id) {
         try {
-            $query = "DELETE FROM contacts WHERE id = :contact_id";
+            $query = "DELETE FROM contacts 
+                     WHERE user_1_id = :user_1_id AND user_2_id = :user_2_id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":contact_id", $contact_id);
+            $stmt->bindValue(":user_1_id", $user_1_id);
+            $stmt->bindValue(":user_2_id", $user_2_id);
             
             if ($stmt->execute()) {
                 return ["message" => "Contact deleted successfully"];
