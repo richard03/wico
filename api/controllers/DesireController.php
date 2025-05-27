@@ -11,8 +11,8 @@ class DesireController {
         $this->user = new User();
     }
     
-    public function getAll($desire = null) {
-        return $this->desire->getAll($desire);
+    public function getAll($user_id = null, $desire = null) {
+        return $this->desire->getAll($user_id, $desire);
     }
     
     public function get($id) {

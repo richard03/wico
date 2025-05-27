@@ -9,20 +9,33 @@ class Desire {
         $this->conn = $database->getConnection();
     }
     
-    public function getAll($desire = null) {
+    public function getAll($user_id = null, $desire = null) {
         try {
             $query = "SELECT d.*, u.nickname as user_name 
                      FROM desires d 
                      JOIN users u ON d.user_id = u.id";
             
+            $conditions = [];
+            $params = [];
+            
+            if ($user_id !== null) {
+                $conditions[] = "d.user_id = :user_id";
+                $params[':user_id'] = $user_id;
+            }
+            
             if ($desire !== null) {
-                $query .= " WHERE d.desire LIKE :desire";
+                $conditions[] = "d.desire LIKE :desire";
+                $params[':desire'] = "%" . $desire . "%";
+            }
+            
+            if (!empty($conditions)) {
+                $query .= " WHERE " . implode(" AND ", $conditions);
             }
             
             $stmt = $this->conn->prepare($query);
             
-            if ($desire !== null) {
-                $stmt->bindValue(":desire", "%" . $desire . "%");
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
             }
             
             $stmt->execute();

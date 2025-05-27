@@ -127,8 +127,9 @@ try {
                     if ($id) {
                         echo json_encode($controller->get($id));
                     } else {
+                        $user_id = $_GET['user_id'] ?? null;
                         $desire = $_GET['desire'] ?? null;
-                        echo json_encode($controller->getAll($desire));
+                        echo json_encode($controller->getAll($user_id, $desire));
                     }
                     break;
                     
