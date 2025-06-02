@@ -102,6 +102,11 @@ class User {
     
     public function create($data) {
         try {
+            // Generate a random 10-digit number for id if not provided
+            if (!isset($data['id'])) {
+                $data['id'] = $this->generateUniqueId();
+            }
+
             $query = "INSERT INTO " . $this->table_name . " 
                      (id, nickname, email, phone, gps) 
                      VALUES (:id, :nickname, :email, :phone, :gps)";
@@ -123,6 +128,34 @@ class User {
             error_log("SQL Error in create: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Generate a unique 10-digit ID for a new user
+     * @return int
+     */
+    private function generateUniqueId() {
+        $maxAttempts = 10; // Maximum number of attempts to generate unique ID
+        $attempt = 0;
+        
+        do {
+            $id = mt_rand(1000000000, 9999999999);
+            
+            // Check if ID exists
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":id", $id);
+            $stmt->execute();
+            
+            $exists = $stmt->fetchColumn() > 0;
+            $attempt++;
+            
+            if (!$exists) {
+                return $id;
+            }
+        } while ($attempt < $maxAttempts);
+        
+        throw new Exception("Unable to generate unique user ID after {$maxAttempts} attempts");
     }
     
     public function update($id, $data) {

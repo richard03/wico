@@ -63,8 +63,7 @@ class Database {
                 user_1_id BIGINT NOT NULL,
                 user_2_phone VARCHAR(20) NOT NULL,
                 user_2_alias VARCHAR(255) NULL,
-                FOREIGN KEY (user_1_id) REFERENCES users(id),
-                FOREIGN KEY (user_2_phone) REFERENCES users(phone)
+                FOREIGN KEY (user_1_id) REFERENCES users(id)
             )");
 
             // Localization table
