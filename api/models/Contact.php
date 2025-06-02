@@ -42,34 +42,19 @@ class Contact {
      * @param int $user_id
      * @return array
      */
-    public function getUserContacts($user_id, $desire = null) {
+    public function getUserContacts($user_id) {
         try {
-            $query = "SELECT c.*, 
-                            u1.nickname as user_1_nickname, 
-                            u2.nickname as user_2_nickname,
-                            u2.email as user_2_email,
-                            u2.phone as user_2_phone,
-                            d.desire, 
-                            d.comment as desire_comment,
-                            d.time as desire_time
+            $query = "SELECT c.*,
+                            d.desire as user_2_desire, 
+                            d.comment as user_2_desire_comment,
+                            d.time as user_2_desire_time
                      FROM " . $this->table_name . " c 
-                     JOIN users u1 ON c.user_1_id = u1.id 
-                     JOIN users u2 ON c.user_2_phone = u2.phone
-                     LEFT JOIN desires d ON d.user_id = u2.id";
-            
-            $query .= " WHERE c.user_1_id = :user_id";
-            
-            if ($desire !== null) {
-                $query .= " AND d.desire LIKE :desire";
-            }
+                     LEFT JOIN users u2 ON c.user_2_phone = u2.phone
+                     LEFT JOIN desires d ON d.user_id = u2.id
+                     WHERE c.user_1_id = :user_id";
             
             $stmt = $this->conn->prepare($query);
             $stmt->bindValue(":user_id", $user_id);
-            
-            if ($desire !== null) {
-                $stmt->bindValue(":desire", "%" . $desire . "%");
-            }
-            
             $stmt->execute();
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
