@@ -158,44 +158,6 @@ try {
             }
             break;
 
-        case 'feelings':
-            require_once __DIR__ . '/controllers/FeelingController.php';
-            $controller = new FeelingController();
-            
-            switch ($method) {
-                case 'GET':
-                    if ($id) {
-                        echo json_encode($controller->get($id));
-                    } else {
-                        echo json_encode($controller->getAll());
-                    }
-                    break;
-                    
-                case 'POST':
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->create($data));
-                    break;
-                    
-                case 'PUT':
-                    if (!$id) {
-                        throw new Exception('ID is required for PUT request');
-                    }
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->update($id, $data));
-                    break;
-                    
-                case 'DELETE':
-                    if (!$id) {
-                        throw new Exception('ID is required for DELETE request');
-                    }
-                    echo json_encode($controller->delete($id));
-                    break;
-                    
-                default:
-                    throw new Exception('Method not allowed');
-            }
-            break;
-            
         case 'localization':
             require_once __DIR__ . '/controllers/LocalizationController.php';
             $controller = new LocalizationController();

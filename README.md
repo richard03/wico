@@ -1,46 +1,38 @@
 # Wico REST API
 
-This is a REST API for the Wico mobile application. The API provides endpoints for user management, feelings, desires, and contacts.
+This is a REST API for the Wico mobile application. The API provides endpoints for user management, desires, and contacts.
 
 ## Database Structure
 
 The application uses MySQL database with the following tables:
 
 ### Users
-- id (UNIQUE, NOT NULL, auto increment)
-- key (bigint)
-- name (NULLABLE)
-- google_id (UNIQUE, NOT NULL)
-- username (UNIQUE, NULLABLE)
-- profile_picture_url (NULLABLE)
-- email (UNIQUE, NOT NULL)
-- session_token (VARCHAR, UNIQUE, NULLABLE)
-- session_token_expiry (TIMESTAMP, NULLABLE)
-- created_at
-- updated_at
-- last_login
-- phone
-- gps
-
-### Feelings
-- id
-- key
-- user_id
-- feeling
-- time
+- id (BIGINT PRIMARY KEY)
+- nickname (VARCHAR(255) NULL)
+- email (VARCHAR(255) NOT NULL UNIQUE)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- last_login (TIMESTAMP NULL)
+- phone (VARCHAR(20) NOT NULL)
+- gps (VARCHAR(255) NULL)
 
 ### Desires
-- id
-- key
-- user_id
-- desire
-- comment
-- time
+- id (BIGINT AUTO_INCREMENT PRIMARY KEY)
+- user_id (BIGINT NOT NULL)
+- desire (TEXT NOT NULL)
+- comment (TEXT NULL)
+- time (TIMESTAMP)
 
 ### Contacts
-- id
-- user_1
-- user_2
+- id (BIGINT AUTO_INCREMENT PRIMARY KEY)
+- user_1_id (BIGINT NOT NULL)
+- user_2_phone (VARCHAR(20) NOT NULL)
+- user_2_alias (VARCHAR(255) NULL)
+
+### Localization
+- message_key (VARCHAR(255) NOT NULL PRIMARY KEY)
+- language (VARCHAR(5) NOT NULL)
+- message_text (TEXT NOT NULL)
 
 ## API Endpoints
 
@@ -51,82 +43,47 @@ All endpoints except user registration require a Bearer token in the Authorizati
 
 #### Register/Login User
 ```
-POST /api/users.php
+POST /api/users
 Content-Type: application/json
 
 {
-    "google_id": "string",
     "email": "string",
-    "name": "string (optional)",
-    "username": "string (optional)",
-    "profile_picture_url": "string (optional)",
-    "phone": "string (optional)",
+    "nickname": "string (optional)",
+    "phone": "string",
     "gps": "string (optional)"
 }
 ```
 
 #### Get User Profile
 ```
-GET /api/users.php
+GET /api/users/{id}
 Authorization: Bearer <session_token>
 ```
 
 #### Update User Profile
 ```
-PUT /api/users.php
+PUT /api/users/{id}
 Authorization: Bearer <session_token>
 Content-Type: application/json
 
 {
-    "name": "string (optional)",
-    "username": "string (optional)",
-    "profile_picture_url": "string (optional)",
+    "nickname": "string (optional)",
     "phone": "string (optional)",
     "gps": "string (optional)"
 }
 ```
 
-#### Logout
+#### Delete User
 ```
-DELETE /api/users.php
-Authorization: Bearer <session_token>
-```
-
-### Feelings
-
-#### Create Feeling
-```
-POST /api/feelings.php
-Authorization: Bearer <session_token>
-Content-Type: application/json
-
-{
-    "feeling": "string"
-}
-```
-
-#### Get Feelings
-```
-GET /api/feelings.php
-Authorization: Bearer <session_token>
-
-Optional query parameters:
-- limit: number
-- start_date: YYYY-MM-DD
-- end_date: YYYY-MM-DD
-```
-
-#### Delete Feeling
-```
-DELETE /api/feelings.php?id=<feeling_id>
+DELETE /api/users/{id}
 Authorization: Bearer <session_token>
 ```
 
 ### Desires
 
-#### Create Desire
+#### Create/Update Desire
 ```
-POST /api/desires.php
+POST /api/desires
 Authorization: Bearer <session_token>
 Content-Type: application/json
 
@@ -138,18 +95,17 @@ Content-Type: application/json
 
 #### Get Desires
 ```
-GET /api/desires.php
+GET /api/desires
 Authorization: Bearer <session_token>
 
 Optional query parameters:
-- limit: number
-- start_date: YYYY-MM-DD
-- end_date: YYYY-MM-DD
+- user_id: number
+- desire: string (search term)
 ```
 
 #### Delete Desire
 ```
-DELETE /api/desires.php?id=<desire_id>
+DELETE /api/desires/{id}
 Authorization: Bearer <session_token>
 ```
 
@@ -157,25 +113,37 @@ Authorization: Bearer <session_token>
 
 #### Add Contact
 ```
-POST /api/contacts.php
+POST /api/contacts
 Authorization: Bearer <session_token>
 Content-Type: application/json
 
 {
-    "user_id": number
+    "user_1_id": "number",
+    "user_2_phone": "string",
+    "user_2_alias": "string (optional)"
 }
 ```
 
-#### Get Contacts
+#### Get User Contacts
 ```
-GET /api/contacts.php
+GET /api/contacts/user/{user_id}
 Authorization: Bearer <session_token>
+
+Optional query parameters:
+- desire: string (filter contacts by their current desire)
 ```
 
 #### Remove Contact
 ```
-DELETE /api/contacts.php?user_id=<user_id>
+DELETE /api/contacts/{id}
 Authorization: Bearer <session_token>
+```
+
+### Localization
+
+#### Get Localization Messages
+```
+GET /api/localization/{language}
 ```
 
 ## Response Format
@@ -200,8 +168,8 @@ All responses are in JSON format:
 
 ## Setup
 
-1. Create a MySQL database named `wico_db`
-2. Update database credentials in `config/database.php`
+1. Create a MySQL database
+2. Copy `config/secret.example.php` to `config/secret.php` and update with your database credentials
 3. Ensure PHP has PDO and MySQL extensions enabled
 4. Place the files in your web server directory
 5. Make sure the web server has write permissions for the application directory
@@ -209,7 +177,7 @@ All responses are in JSON format:
 ## Security
 
 - All database queries use prepared statements to prevent SQL injection
+- All endpoints (except registration) require authentication
 - Session tokens are randomly generated using cryptographically secure functions
 - Session tokens expire after 30 days
-- All endpoints (except registration) require authentication
 - CORS headers are properly set for cross-origin requests 

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/database.php';
 
 class Desire {
     private $conn;
+    private $table_name = 'desires';
     
     public function __construct() {
         $database = new Database();
@@ -12,7 +13,7 @@ class Desire {
     public function getAll($user_id = null, $desire = null) {
         try {
             $query = "SELECT d.*, u.nickname as user_name 
-                     FROM desires d 
+                     FROM " . $this->table_name . " d 
                      JOIN users u ON d.user_id = u.id";
             
             $conditions = [];
@@ -32,6 +33,8 @@ class Desire {
                 $query .= " WHERE " . implode(" AND ", $conditions);
             }
             
+            $query .= " ORDER BY d.time DESC";
+            
             $stmt = $this->conn->prepare($query);
             
             foreach ($params as $key => $value) {
@@ -50,7 +53,7 @@ class Desire {
     public function get($id) {
         try {
             $query = "SELECT d.*, u.nickname as user_name 
-                     FROM desires d 
+                     FROM " . $this->table_name . " d 
                      JOIN users u ON d.user_id = u.id 
                      WHERE d.id = :id";
             
@@ -68,7 +71,7 @@ class Desire {
     public function create($data) {
         try {
             // First check if desire exists for this user
-            $checkQuery = "SELECT id FROM desires WHERE user_id = :user_id";
+            $checkQuery = "SELECT id FROM " . $this->table_name . " WHERE user_id = :user_id";
             $checkStmt = $this->conn->prepare($checkQuery);
             $checkStmt->bindValue(":user_id", $data['user_id']);
             $checkStmt->execute();
@@ -76,7 +79,7 @@ class Desire {
             
             if ($existingDesire) {
                 // If exists, update it
-                $query = "UPDATE desires SET 
+                $query = "UPDATE " . $this->table_name . " SET 
                             desire = :desire,
                             comment = :comment,
                             time = CURRENT_TIMESTAMP
@@ -88,16 +91,11 @@ class Desire {
                 $stmt->bindValue(":comment", $data['comment'] ?? null);
                 
                 if ($stmt->execute()) {
-                    return [
-                        "id" => $existingDesire['id'],
-                        "user_id" => $data['user_id'],
-                        "desire" => $data['desire'],
-                        "comment" => $data['comment'] ?? null
-                    ];
+                    return $this->get($existingDesire['id']);
                 }
             } else {
                 // If doesn't exist, create new
-                $query = "INSERT INTO desires (user_id, desire, comment, time) 
+                $query = "INSERT INTO " . $this->table_name . " (user_id, desire, comment, time) 
                          VALUES (:user_id, :desire, :comment, CURRENT_TIMESTAMP)";
                 
                 $stmt = $this->conn->prepare($query);
@@ -106,12 +104,7 @@ class Desire {
                 $stmt->bindValue(":comment", $data['comment'] ?? null);
                 
                 if ($stmt->execute()) {
-                    return [
-                        "id" => $this->conn->lastInsertId(),
-                        "user_id" => $data['user_id'],
-                        "desire" => $data['desire'],
-                        "comment" => $data['comment'] ?? null
-                    ];
+                    return $this->get($this->conn->lastInsertId());
                 }
             }
             
@@ -124,10 +117,10 @@ class Desire {
     
     public function update($id, $data) {
         try {
-            $query = "UPDATE desires SET 
+            $query = "UPDATE " . $this->table_name . " SET 
                         desire = :desire,
                         comment = :comment,
-                        updated_at = CURRENT_TIMESTAMP
+                        time = CURRENT_TIMESTAMP
                      WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
@@ -149,7 +142,7 @@ class Desire {
     
     public function delete($id) {
         try {
-            $query = "DELETE FROM desires WHERE id = :id";
+            $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
             $stmt->bindValue(":id", $id);
@@ -161,6 +154,50 @@ class Desire {
             throw new Exception("Unable to delete desire");
         } catch (PDOException $e) {
             error_log("SQL Error in delete: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
+
+    public function getUserDesires($userId, $limit = null) {
+        try {
+            $query = "SELECT * FROM " . $this->table_name . " 
+                     WHERE user_id = :user_id 
+                     ORDER BY time DESC";
+            
+            if ($limit) {
+                $query .= " LIMIT :limit";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":user_id", $userId);
+            if ($limit) {
+                $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("SQL Error in getUserDesires: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
+
+    public function getDesiresByDateRange($userId, $startDate, $endDate) {
+        try {
+            $query = "SELECT * FROM " . $this->table_name . " 
+                     WHERE user_id = :user_id 
+                     AND time BETWEEN :start_date AND :end_date 
+                     ORDER BY time DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":user_id", $userId);
+            $stmt->bindValue(":start_date", $startDate);
+            $stmt->bindValue(":end_date", $endDate);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("SQL Error in getDesiresByDateRange: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
         }
     }

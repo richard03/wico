@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/database.php';
 
 class User {
     private $conn;
+    private $table_name = 'users';
     
     public function __construct() {
         $database = new Database();
@@ -12,7 +13,7 @@ class User {
     public function getAll() {
         try {
             $query = "SELECT id, nickname, email, created_at, updated_at, last_login, phone, gps 
-                     FROM users";
+                     FROM " . $this->table_name;
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
@@ -27,7 +28,7 @@ class User {
     public function get($id) {
         try {
             $query = "SELECT id, nickname, email, created_at, updated_at, last_login, phone, gps 
-                     FROM users 
+                     FROM " . $this->table_name . " 
                      WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
@@ -101,28 +102,20 @@ class User {
     
     public function create($data) {
         try {
-            // Generate a random 10-digit number for id
-            $id = mt_rand(1000000000, 9999999999);
-            
-            $query = "INSERT INTO users (id, nickname, email, phone, gps) 
+            $query = "INSERT INTO " . $this->table_name . " 
+                     (id, nickname, email, phone, gps) 
                      VALUES (:id, :nickname, :email, :phone, :gps)";
             
             $stmt = $this->conn->prepare($query);
             
-            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":id", $data['id']);
             $stmt->bindValue(":nickname", $data['nickname'] ?? null);
             $stmt->bindValue(":email", $data['email']);
-            $stmt->bindValue(":phone", $data['phone'] ?? null);
+            $stmt->bindValue(":phone", $data['phone']);
             $stmt->bindValue(":gps", $data['gps'] ?? null);
             
             if ($stmt->execute()) {
-                return [
-                    "id" => $id,
-                    "nickname" => $data['nickname'] ?? null,
-                    "email" => $data['email'],
-                    "phone" => $data['phone'] ?? null,
-                    "gps" => $data['gps'] ?? null
-                ];
+                return $this->get($data['id']);
             }
             
             throw new Exception("Unable to create user");
@@ -134,19 +127,35 @@ class User {
     
     public function update($id, $data) {
         try {
-            $query = "UPDATE users SET 
-                        nickname = :nickname,
-                        phone = :phone,
-                        gps = :gps,
-                        updated_at = CURRENT_TIMESTAMP
+            $updateFields = [];
+            $params = [":id" => $id];
+            
+            if (isset($data['nickname'])) {
+                $updateFields[] = "nickname = :nickname";
+                $params[":nickname"] = $data['nickname'];
+            }
+            if (isset($data['phone'])) {
+                $updateFields[] = "phone = :phone";
+                $params[":phone"] = $data['phone'];
+            }
+            if (isset($data['gps'])) {
+                $updateFields[] = "gps = :gps";
+                $params[":gps"] = $data['gps'];
+            }
+            
+            if (empty($updateFields)) {
+                return $this->get($id);
+            }
+            
+            $query = "UPDATE " . $this->table_name . " 
+                     SET " . implode(", ", $updateFields) . " 
                      WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
             
-            $stmt->bindValue(":id", $id);
-            $stmt->bindValue(":nickname", $data['nickname'] ?? null);
-            $stmt->bindValue(":phone", $data['phone'] ?? null);
-            $stmt->bindValue(":gps", $data['gps'] ?? null);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
             
             if ($stmt->execute()) {
                 return $this->get($id);
@@ -161,10 +170,16 @@ class User {
     
     public function delete($id) {
         try {
-            // First delete all contacts where this user is either user_1_id or user_2_id
-            $deleteContactsQuery = "DELETE FROM contacts WHERE user_1_id = :user_id OR user_2_id = :user_id";
+            // First delete all contacts where this user is either user_1_id or their phone is user_2_phone
+            $user = $this->get($id);
+            if (!$user) {
+                throw new Exception("User not found");
+            }
+
+            $deleteContactsQuery = "DELETE FROM contacts WHERE user_1_id = :user_id OR user_2_phone = :user_phone";
             $deleteContactsStmt = $this->conn->prepare($deleteContactsQuery);
             $deleteContactsStmt->bindValue(":user_id", $id);
+            $deleteContactsStmt->bindValue(":user_phone", $user['phone']);
             $deleteContactsStmt->execute();
             
             // Then delete all desires associated with this user
@@ -174,7 +189,7 @@ class User {
             $deleteDesiresStmt->execute();
             
             // Finally delete the user
-            $query = "DELETE FROM users WHERE id = :id";
+            $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
             $stmt->bindValue(":id", $id);
@@ -186,6 +201,21 @@ class User {
             throw new Exception("Unable to delete user");
         } catch (PDOException $e) {
             error_log("SQL Error in delete: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
+    }
+
+    public function updateLastLogin($id) {
+        try {
+            $query = "UPDATE " . $this->table_name . " 
+                     SET last_login = CURRENT_TIMESTAMP 
+                     WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":id", $id);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("SQL Error in updateLastLogin: " . $e->getMessage());
             throw new Exception("Database error: " . $e->getMessage());
         }
     }
