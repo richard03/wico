@@ -181,16 +181,19 @@ class Contact {
     
     /**
      * Delete a contact
-     * DELETE /contacts/{id}
-     * @param int $id
+     * DELETE /contacts/{user_1_id}/?contact={user_2_phone}
+     * @param int $user_1_id
+     * @param string $user_2_phone
      * @return array
      */
-    public function delete($id) {
+    public function delete($user_1_id, $user_2_phone) {
         try {
-            $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+            $query = "DELETE FROM " . $this->table_name . " 
+                     WHERE user_1_id = :user_1_id AND user_2_phone = :user_2_phone";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":user_1_id", $user_1_id);
+            $stmt->bindValue(":user_2_phone", $user_2_phone);
             
             if ($stmt->execute()) {
                 return ["message" => "Contact deleted successfully"];
