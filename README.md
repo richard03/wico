@@ -1,33 +1,19 @@
 # Wico REST API
 
-This is a REST API for the Wico mobile application. The API provides endpoints for user management, desires, and contacts.
+This is a REST API for the Wico mobile application. The API provides endpoints for managing desires and localization.
 
 ## Database Structure
 
 The application uses MySQL database with the following tables:
 
-### Users
-- id (BIGINT PRIMARY KEY)
-- nickname (VARCHAR(255) NULL)
-- email (VARCHAR(255) NOT NULL UNIQUE)
-- created_at (TIMESTAMP)
-- updated_at (TIMESTAMP)
-- last_login (TIMESTAMP NULL)
-- phone (VARCHAR(20) NOT NULL)
-- gps (VARCHAR(255) NULL)
-
 ### Desires
 - id (BIGINT AUTO_INCREMENT PRIMARY KEY)
 - user_id (BIGINT NOT NULL)
-- desire (TEXT NOT NULL)
+- key (VARCHAR(255) NOT NULL)
+- desire (VARCHAR(20) NOT NULL)
 - comment (TEXT NULL)
-- time (TIMESTAMP)
-
-### Contacts
-- id (BIGINT AUTO_INCREMENT PRIMARY KEY)
-- user_1_id (BIGINT NOT NULL)
-- user_2_phone (VARCHAR(20) NOT NULL)
-- user_2_alias (VARCHAR(255) NULL)
+- time (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+- FOREIGN KEY (user_id) REFERENCES users(id)
 
 ### Localization
 - message_key (VARCHAR(255) NOT NULL PRIMARY KEY)
@@ -36,107 +22,50 @@ The application uses MySQL database with the following tables:
 
 ## API Endpoints
 
-### Authentication
-All endpoints except user registration require a Bearer token in the Authorization header.
-
-### Users
-
-#### Register/Login User
-```
-POST /api/users
-Content-Type: application/json
-
-{
-    "email": "string",
-    "nickname": "string (optional)",
-    "phone": "string",
-    "gps": "string (optional)"
-}
-```
-
-#### Get User Profile
-```
-GET /api/users/{id}
-Authorization: Bearer <session_token>
-```
-
-#### Update User Profile
-```
-PUT /api/users/{id}
-Authorization: Bearer <session_token>
-Content-Type: application/json
-
-{
-    "nickname": "string (optional)",
-    "phone": "string (optional)",
-    "gps": "string (optional)"
-}
-```
-
-#### Delete User
-```
-DELETE /api/users/{id}
-Authorization: Bearer <session_token>
-```
-
 ### Desires
+
+#### Get Desires
+```
+GET /api/desires
+Required query parameters:
+- desire: string (filter by desire type)
+- key: string (authentication key)
+
+Optional query parameters:
+- limit: number (limit number of results, default 20)
+```
+
+#### GET Desire
+```
+GET /api/desires/{id}
+Required query parameters:
+- id: number (get specific user's desire) 
+- key: string (authentication key)
+```
+
+
 
 #### Create/Update Desire
 ```
 POST /api/desires
-Authorization: Bearer <session_token>
-Content-Type: application/json
+Required query parameters:
+- key: string (authentication key)
 
+Request body:
 {
+    "user_id": "number",
+    "key": "string",
     "desire": "string",
     "comment": "string (optional)"
 }
 ```
 
-#### Get Desires
-```
-GET /api/desires
-Authorization: Bearer <session_token>
-
-Optional query parameters:
-- user_id: number
-- desire: string (search term)
-```
-
 #### Delete Desire
 ```
-DELETE /api/desires/{id}
-Authorization: Bearer <session_token>
-```
-
-### Contacts
-
-#### Add Contact
-```
-POST /api/contacts
-Authorization: Bearer <session_token>
-Content-Type: application/json
-
-{
-    "user_1_id": "number",
-    "user_2_phone": "string",
-    "user_2_alias": "string (optional)"
-}
-```
-
-#### Get User Contacts
-```
-GET /api/contacts/user/{user_id}
-Authorization: Bearer <session_token>
-
-Optional query parameters:
-- desire: string (filter contacts by their current desire)
-```
-
-#### Remove Contact
-```
-DELETE /api/contacts/{id}
-Authorization: Bearer <session_token>
+DELETE /api/desires
+Required query parameters:
+- key: string (authentication key)
+- id: number (user_id to delete desire for)
 ```
 
 ### Localization
@@ -144,6 +73,7 @@ Authorization: Bearer <session_token>
 #### Get Localization Messages
 ```
 GET /api/localization/{language}
+Example: /api/localization/cz
 ```
 
 ## Response Format
@@ -154,7 +84,6 @@ All responses are in JSON format:
 ```json
 {
     "success": true,
-    "message": "string",
     "data": object | array | null
 }
 ```
@@ -177,7 +106,5 @@ All responses are in JSON format:
 ## Security
 
 - All database queries use prepared statements to prevent SQL injection
-- All endpoints (except registration) require authentication
-- Session tokens are randomly generated using cryptographically secure functions
-- Session tokens expire after 30 days
+- All endpoints require a valid key parameter for authentication
 - CORS headers are properly set for cross-origin requests 

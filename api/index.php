@@ -15,7 +15,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // Basic routing
 $resource = $segments[0] ?? '';
-$id = $segments[1] ?? null;
 
 // Handle OPTIONS request for CORS
 if ($method === 'OPTIONS') {
@@ -26,131 +25,56 @@ if ($method === 'OPTIONS') {
 // Route the request
 try {
     switch ($resource) {
-        case 'users':
-            require_once __DIR__ . '/controllers/UserController.php';
-            $controller = new UserController();
-            
-            // Check if this is a request for user contacts
-            if (isset($segments[2]) && $segments[2] === 'contacts') {
-                require_once __DIR__ . '/controllers/ContactController.php';
-                $contactController = new ContactController();
-                
-                if ($method === 'GET') {
-                    $desire = $_GET['desire'] ?? null;
-                    echo json_encode($contactController->getUserContacts($id, $desire));
-                    break;
-                }
-            }
-            
-            switch ($method) {
-                case 'GET':
-                    if ($id) {
-                        echo json_encode($controller->get($id));
-                    } else {
-                        echo json_encode($controller->getAll());
-                    }
-                    break;
-                    
-                case 'POST':
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->create($data));
-                    break;
-                    
-                case 'PUT':
-                    if (!$id) {
-                        throw new Exception('ID is required for PUT request');
-                    }
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->update($id, $data));
-                    break;
-                    
-                case 'DELETE':
-                    if (!$id) {
-                        throw new Exception('ID is required for DELETE request');
-                    }
-                    echo json_encode($controller->delete($id));
-                    break;
-                    
-                default:
-                    throw new Exception('Method not allowed');
-            }
-            break;
-            
-        case 'contacts':
-            require_once __DIR__ . '/controllers/ContactController.php';
-            $controller = new ContactController();
-            
-            switch ($method) {
-                case 'GET':
-                    if ($id) {
-                        echo json_encode($controller->get($id));
-                    } else {
-                        echo json_encode($controller->getAll());
-                    }
-                    break;
-                    
-                case 'POST':
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->create($data));
-                    break;
-                    
-                case 'PUT':
-                    if (!$id) {
-                        throw new Exception('ID is required for PUT request');
-                    }
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->update($id, $data));
-                    break;
-                    
-                case 'DELETE':
-                    if (!$id) {
-                        throw new Exception('User ID is required for DELETE request');
-                    }
-                    $contact_id = $_GET['contact'] ?? null;
-                    if (!$contact_id) {
-                        throw new Exception('Contact ID is required for DELETE request');
-                    }
-                    echo json_encode($controller->delete($id, $contact_id));
-                    break;
-                    
-                default:
-                    throw new Exception('Method not allowed');
-            }
-            break;
 
         case 'desires':
             require_once __DIR__ . '/controllers/DesireController.php';
             $controller = new DesireController();
-            
+
+            // Routing
+            $user_id = $segments[1] ?? null;
+
             switch ($method) {
                 case 'GET':
-                    if ($id) {
-                        echo json_encode($controller->get($id));
+                    $key = $_GET['key'] ?? null;
+                    if (!$key) {
+                        throw new Exception('Correct KEY is required for a GET request');
+                    }
+                    $user_id = $_GET['user_id'] ?? null;
+                    $desire = $_GET['desire'] ?? null;
+                    
+                    if ($user_id) {
+                        // get a desire by user_id
+                        echo json_encode($controller->get($user_id, $key));
                     } else {
-                        $user_id = $_GET['user_id'] ?? null;
-                        $desire = $_GET['desire'] ?? null;
-                        echo json_encode($controller->getAll($user_id, $desire));
+                        // get all records by desire
+                        $limit = $_GET['limit'] ?? null;
+                        if ($limit) {
+                            echo json_encode($controller->getAll($desire, $key, (int)$limit));
+                        } else {
+                            echo json_encode($controller->getAll($desire, $key));
+                        }
                     }
                     break;
                     
                 case 'POST':
                     $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->create($data));
-                    break;
-                    
-                case 'PUT':
-                    if (!$id) {
-                        throw new Exception('ID is required for PUT request');
+                    $key = $data['key'] ?? null;
+                    if (!$key) {
+                        throw new Exception('Correct KEY is required for a POST request');
                     }
-                    $data = json_decode(file_get_contents('php://input'), true);
-                    echo json_encode($controller->update($id, $data));
+                    echo json_encode($controller->set($data, $key));
                     break;
                     
                 case 'DELETE':
-                    if (!$id) {
-                        throw new Exception('ID is required for DELETE request');
+                    $key = $_GET['key'] ?? null;
+                    if (!$key) {
+                        throw new Exception('Correct KEY is required for a DELETE request');
                     }
-                    echo json_encode($controller->delete($id));
+                    $user_id = $_GET['user_id'] ?? null;
+                    if (!$user_id) {
+                        throw new Exception('User ID is required for a DELETE request');
+                    }
+                    echo json_encode($controller->delete($user_id, $key));
                     break;
                     
                 default:
@@ -163,10 +87,11 @@ try {
             $controller = new LocalizationController();
             
             if ($method === 'GET') {
-                if (!$id) {
+                $language = $segments[1] ?? null;
+                if (!$language) {
                     throw new Exception('Language is required');
                 }
-                echo json_encode($controller->getAll($id));
+                echo json_encode($controller->getAll($language));
             } else {
                 throw new Exception('Method not allowed');
             }

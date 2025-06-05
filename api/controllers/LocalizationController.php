@@ -1,11 +1,28 @@
 <?php
-require_once __DIR__ . '/../models/Localization.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class LocalizationController {
-    private $localization;
+    private $conn;
     
     public function __construct() {
-        $this->localization = new Localization();
+        $database = new Database();
+        $this->conn = $database->getConnection();
+        $this->createTables();
+    }
+
+    private function createTables() {
+        try {
+
+            // Localization table
+            $this->conn->exec("CREATE TABLE IF NOT EXISTS localization (
+                message_key VARCHAR(255) NOT NULL PRIMARY KEY,
+                language VARCHAR(5) NOT NULL,
+                message_text TEXT NOT NULL
+            )");
+        } catch(PDOException $e) {
+            error_log("Error creating tables: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
+        }
     }
     
     /**
@@ -18,21 +35,19 @@ class LocalizationController {
         if (empty($language)) {
             throw new Exception('Language is required');
         }
-        return $this->localization->getAll($language);
-    }
-
-    /**
-     * Set a localization
-     * POST /localizations
-     * @param string $language
-     * @param string $message_key
-     * @param string $message_text
-     * @return array
-     */
-    public function set($language, $message_key, $message_text) {
-        if (empty($language) || empty($message_key) || empty($message_text)) {
-            throw new Exception('Language, message_key, and message_text are required');
+        try {
+            $query = "SELECT message_key, message_text 
+                     FROM localization 
+                     WHERE language = :language";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(":language", $language);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("SQL Error in getAll: " . $e->getMessage());
+            throw new Exception("Database error: " . $e->getMessage());
         }
-        return $this->localization->set($language, $message_key, $message_text);
     }
-} 
+}
