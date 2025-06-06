@@ -1,35 +1,39 @@
 <?php
-header('Content-Type: application/json');
 
-// Get the request URI and remove the base path
-$request_uri = $_SERVER['REQUEST_URI'];
-$base_path = '/api/';
-$path = substr($request_uri, strpos($request_uri, $base_path) + strlen($base_path));
+$dev = true; // developers mode - all responses are slowed randomly
 
-// Split the path into segments and remove query string
-$path = strtok($path, '?');
-$segments = explode('/', trim($path, '/'));
+// Start output buffering
+ob_start();
 
-// Get the HTTP method
-$method = $_SERVER['REQUEST_METHOD'];
-
-// Basic routing
-$resource = $segments[0] ?? '';
-
-// Handle OPTIONS request for CORS
-if ($method === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Route the request
+// Process the request
 try {
-    switch ($resource) {
+    // Get the request URI and remove the base path
+    $request_uri = $_SERVER['REQUEST_URI'];
+    $base_path = '/api/';
+    $path = substr($request_uri, strpos($request_uri, $base_path) + strlen($base_path));
 
+    // Split the path into segments and remove query string
+    $path = strtok($path, '?');
+    $segments = explode('/', trim($path, '/'));
+
+    // Get the HTTP method
+    $method = $_SERVER['REQUEST_METHOD'];
+
+    // Basic routing
+    $resource = $segments[0] ?? '';
+
+    // Handle OPTIONS request for CORS
+    if ($method === 'OPTIONS') {
+        http_response_code(200);
+        exit();
+    }
+
+    // Route the request
+    switch ($resource) {
         case 'desires':
             require_once __DIR__ . '/controllers/DesireController.php';
             $controller = new DesireController();
-
+            
             switch ($method) {
                 case 'GET':
                     $key = $_GET['key'] ?? null;
@@ -37,7 +41,6 @@ try {
                         throw new Exception('Correct KEY is required for a GET request');
                     }
                     $desire = $_GET['desire'] ?? null;
-                    
                     echo json_encode($controller->get($key));
                     break;
                     
@@ -85,3 +88,18 @@ try {
     http_response_code(400);
     echo json_encode(['error' => $e->getMessage()]);
 }
+
+// Get the response content
+$response = ob_get_clean();
+
+// Add random delay in developer mode to observe racing conditions
+if ($dev) {
+    $delay = rand(0, 3); // random delay between 0 and 2 seconds
+    $microdelay = rand(0, 999); // more precise random delay between 0 and 999 microseconds
+    sleep($delay); // non-blocking delay
+    usleep($microdelay); // blocking micro delay
+}
+
+// Send headers and response
+header('Content-Type: application/json');
+echo $response;
