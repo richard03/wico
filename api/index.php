@@ -30,30 +30,15 @@ try {
             require_once __DIR__ . '/controllers/DesireController.php';
             $controller = new DesireController();
 
-            // Routing
-            $user_id = $segments[1] ?? null;
-
             switch ($method) {
                 case 'GET':
                     $key = $_GET['key'] ?? null;
                     if (!$key) {
                         throw new Exception('Correct KEY is required for a GET request');
                     }
-                    $user_id = $_GET['user_id'] ?? null;
                     $desire = $_GET['desire'] ?? null;
                     
-                    if ($user_id) {
-                        // get a desire by user_id
-                        echo json_encode($controller->get($user_id, $key));
-                    } else {
-                        // get all records by desire
-                        $limit = $_GET['limit'] ?? null;
-                        if ($limit) {
-                            echo json_encode($controller->getAll($desire, $key, (int)$limit));
-                        } else {
-                            echo json_encode($controller->getAll($desire, $key));
-                        }
-                    }
+                    echo json_encode($controller->get($key));
                     break;
                     
                 case 'POST':
@@ -70,11 +55,7 @@ try {
                     if (!$key) {
                         throw new Exception('Correct KEY is required for a DELETE request');
                     }
-                    $user_id = $_GET['user_id'] ?? null;
-                    if (!$user_id) {
-                        throw new Exception('User ID is required for a DELETE request');
-                    }
-                    echo json_encode($controller->delete($user_id, $key));
+                    echo json_encode($controller->delete($key));
                     break;
                     
                 default:
